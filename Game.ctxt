@@ -1,0 +1,11 @@
+#BlueJ class context
+comment0.target=Game
+comment1.params=
+comment1.target=void\ main()
+comment2.params=
+comment2.target=Game()
+comment3.params=
+comment3.target=int[]\ getMove()
+comment4.params=player
+comment4.target=void\ makeMove(Player)
+numComments=5
