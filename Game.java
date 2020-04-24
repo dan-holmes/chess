@@ -1,4 +1,7 @@
 import java.util.Scanner;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
 
 public class Game
 {
@@ -7,56 +10,171 @@ public class Game
     private Player player1;
     private Player player2;
     private Player activePlayer;
+    private boolean secondClick;
+    private Piece selectedPiece;
+    private JFrame window;
     
-    public static void main()
+    public static void main(String[] args)
     {
         Game game = new Game();
     }
 
     public Game()
     {
-        board = new Board();
-        player1 = new Player('W');
-        player2 = new Player('B');
-                      
+
+        window = new JFrame("Chess");
+        window.setSize(800,800);
+        window.setLocation(100,100);
+        
+        player1 = new Player(this,'W');
+        player2 = new Player(this,'B');        
         activePlayer = player1;
+        
+        board = new Board(this);
+        
+        player1.setKing();
+        player2.setKing();
+        
+        board.paintBoard(window);
+        window.setVisible(true);
+        
+        
+        secondClick = false;
+        selectedPiece = null;
         
         board.display();
         
-        while(1==1)
-        {
-            makeMove(player1);
-        }
     }
     
-    public int[] getMove()
+    public Player getActivePlayer()
     {
-        Scanner user_input = new Scanner( System.in );
-        String instruction = user_input.nextLine();
-        int[] instructions = new int[4];
-        for (int i = 0; i<=3; i++)
-        {
-            char character = instruction.charAt(i);
-            instructions[i] = Character.getNumericValue(character);
-        }
-        return instructions;
+        return activePlayer;
     }
-
-    public void makeMove(Player player)
+    
+    public Player getPlayer1()
     {
-        int[] instructions = getMove();
+        return player1;
+    }
+    
+    public Player getPlayer2()
+    {
+        return player2;
+    }
+    
+    public Board getBoard()
+    {
+        return board;
+    }
+    
+    public void handleSelection(Piece piece)
+    {
+        if(secondClick)
+        {
+            selectedPiece.getPieceDisplay().setSelected(false);
+            selectedPiece.getPieceDisplay().revalidate();
+            selectedPiece.getPieceDisplay().repaint();
+        }
+        if (piece.getColour() == activePlayer.getColour())
+        {
+            secondClick = false;
+        }
+        if (secondClick == false)
+        {
+            selectedPiece = piece;
+            piece.updateValidMoves();
+            
+            piece.getPieceDisplay().setSelected(true);
+            piece.getPieceDisplay().revalidate();
+            piece.getPieceDisplay().repaint();
+            
+            secondClick = true;
+        } else {
+            makeMove(activePlayer, selectedPiece, piece);
+            selectedPiece = null;
+            secondClick = false;
+        }
+    }   
+
+    public void makeMove(Player player,Piece selectedPiece, Piece destinationPiece)
+    {
+        Coords selectedPieceCoords = selectedPiece.getCoords();
+        Piece destinationPieceBackup = new Piece(destinationPiece);
+        Player oppPlayer;
         
-        Piece piece = board.getPiece(instructions[0],instructions[1]);
+        if (selectedPiece.getColour() != player.getColour())
+        {
+            return;
+        }
         
-        piece.move(instructions[2],instructions[3]);
+        if (!selectedPiece.move(destinationPiece))
+        {
+            return;
+        }
+        
+        if (player.inCheck())
+        {
+            board.display();
+            board.setPiece(selectedPieceCoords,selectedPiece);
+            board.setPiece(destinationPieceBackup.getCoords(),destinationPieceBackup);
+            board.paintBoard(window);
+            return;
+        }
+        
+        if (selectedPiece.getType() == 'K')
+        {
+            player.moveKing();
+        }
+        
+        if (selectedPiece.getType() == 'P')
+        {
+            if (selectedPiece.getCoords().x == 0 || selectedPiece.getCoords().x == 7)
+            {
+                selectedPiece.setType('Q');
+            }
+        }
+
+        if (selectedPiece.getType() == 'R')
+        {
+            if (selectedPiece.getCoords().y == 0)
+            {
+                player.moveQSCastle();
+            }
+            if (selectedPiece.getCoords().y == 7)
+            {
+                player.moveKSCastle();
+            }
+        }
         
         if (player == player1)
         {
-            activePlayer = player2;
+            oppPlayer = player2;
         } else {
-            activePlayer = player1;
+            oppPlayer = player1;
         }
         
-        board.display();
+        
+        
+        if (oppPlayer.inCheckmate())
+        {
+            board.paintBoard(window);
+            String strColour;
+            if (player.getColour() == 'W') {strColour = "White"; } else { strColour = "Black"; }
+            JOptionPane.showMessageDialog(window,strColour+" wins by checkmate!");
+            /*board.resetBoard();
+            player1.setKing();
+            player2.setKing();
+            activePlayer = player2;*/
+        }
+        
+        
+        activePlayer = oppPlayer;
+        
+        board.paintBoard(window);
+    } 
+    
+    public void debug(String message)
+    {
+        board.paintBoard(window);
+        JOptionPane.showMessageDialog(window,message);
     }
 }

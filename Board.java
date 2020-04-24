@@ -1,28 +1,27 @@
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
 
-/**
- * Write a description of class Board here.
- *
- * @author (your name)
- * @version (a version number or a date)
- */
 public class Board
 {
     private Piece[][] pieces = new Piece[8][8];
+    private Game game;
+    
+    private Piece[][] savedState = new Piece[8][8];
 
     /**
      * Constructor for objects of class Board
      */
-    public Board()
+    public Board(Game currentGame)
     {
+        game = currentGame;
         resetBoard();
     }
-
-    /**
-     * An example of a method - replace this comment with your own
-     *
-     * @param  y  a sample parameter for a method
-     * @return    the sum of x and y
-     */
+    
+    public Game getGame()
+    {
+        return game;
+    }
     
     public void resetBoard()
     {
@@ -46,25 +45,64 @@ public class Board
             for (int j = 0; j <= 7; j++)
             {
                 Piece piece = pieces[i][j];
-                piece.setLocation(i,j);
+                piece.setLocation(new Coords(i,j));
             }
         }
     }
     
-    public Piece getPiece(int x,int y)
+    public Piece getPiece(Coords coords)
     {
-        return pieces[x][y];
+        if (coords.outOfRange())
+        {
+            return new Piece('0','X',this);
+        }
+        return pieces[coords.x][coords.y];
     }
     
-    public void setPiece(int x,int y, Piece piece)
+    public void setPiece(Coords coords, Piece piece)
     {
-        pieces[x][y] = piece;
-        piece.setLocation(x,y);
+        pieces[coords.x][coords.y] = piece;
+        piece.setLocation(coords);
     }
     
     public Piece[][] getPieces()
     {
         return pieces;
+    }
+    
+    public void paintBoard(JFrame window)
+    {
+        BoardDisplay boardDisplay = new BoardDisplay();
+        
+        boardDisplay.setLayout(new GridLayout(8,8));
+        
+        char activeColour = game.getActivePlayer().getColour();
+        
+        for (int i = 0; i <= 7; i++)
+        {
+            for (int j = 0; j <= 7; j++)
+            {
+                Piece piece;
+                
+                if (activeColour == 'B')
+                {
+                    piece = pieces[7-i][7-j];
+                } else {
+                    piece = pieces[i][j];
+                }
+                
+                PieceDisplay pieceDisplay = new PieceDisplay(piece);
+                MoveListener moveListener = new MoveListener(game, piece);
+                pieceDisplay.addMouseListener(moveListener);
+                boardDisplay.add(pieceDisplay);
+                piece.setPieceDisplay(pieceDisplay);
+            }
+        }
+        
+        window.setContentPane(boardDisplay);
+        window.revalidate();
+        window.repaint();
+        
     }
     
     public void display()
